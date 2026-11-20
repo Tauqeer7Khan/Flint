@@ -1,0 +1,18 @@
+{
+  "name": "flint",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.21.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter api --filter web dev",
+    "db:migrate": "pnpm --filter api exec prisma migrate dev",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:reset": "pnpm --filter api db:reset"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

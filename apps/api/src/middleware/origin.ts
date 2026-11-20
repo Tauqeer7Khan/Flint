@@ -1,0 +1,13 @@
+import { Request, Response, NextFunction } from 'express';
+
+export function originCheckMiddleware(req: Request, res: Response, next: NextFunction) {
+  const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (mutatingMethods.includes(req.method)) {
+    const origin = req.headers.origin;
+    const webOrigin = process.env.WEB_ORIGIN || 'http://localhost:3000';
+    if (origin && origin !== webOrigin) {
+      return res.status(403).json({ error: 'Forbidden: Invalid request origin' });
+    }
+  }
+  next();
+}

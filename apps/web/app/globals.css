@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #EA580C;
+  --color-primary-hover: #C2410C;
+  --color-accent-lavender: #E9D5FF;
+  --color-accent-purple: #7C3AED;
+  --color-navy: #0B132B;
+  --color-navy-muted: #1E293B;
+
+  --font-heading: var(--font-heading), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+
+  --radius-2xl: 1rem;
+}
+
+:root {
+  --background: #F8FAFC;
+  --foreground: #0B132B;
+  --card: #FFFFFF;
+  --card-foreground: #0B132B;
+  --popover: #FFFFFF;
+  --popover-foreground: #0B132B;
+  --primary: #EA580C;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3E8FF;
+  --secondary-foreground: #6B21A8;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #FAF5FF;
+  --accent-foreground: #7C3AED;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #EA580C;
+  --radius: 1rem;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}

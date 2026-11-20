@@ -1,0 +1,458 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  SALES_REP
+  SUPPORT_AGENT
+}
+
+enum Department {
+  SALES
+  CUSTOMER_SUCCESS
+  SUPPORT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  NOTE
+  INTERNAL_COMMENT
+  SYSTEM
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  password_hash String
+  role          Role
+  department    Department
+  team_id       String?
+  team          Team?      @relation(fields: [team_id], references: [id], onDelete: SetNull)
+
+  owned_leads          Lead[]             @relation("LeadOwner")
+  owned_accounts       Account[]          @relation("AccountOwner")
+  owned_contacts       Contact[]          @relation("ContactOwner")
+  owned_deals          Deal[]             @relation("DealOwner")
+  assigned_tasks       Task[]             @relation("TaskAssignee")
+  created_tasks        Task[]             @relation("TaskCreator")
+  assigned_tickets     Ticket[]           @relation("TicketAssignee")
+  authored_activities  Activity[]         @relation("ActivityAuthor")
+  notifications        Notification[]
+  audit_logs           AuditLog[]
+  deal_stage_changes   DealStageHistory[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([team_id])
+  @@index([role])
+  @@index([department])
+  @@map("users")
+}
+
+model Team {
+  id         String     @id @default(cuid())
+  name       String
+  department Department
+  members    User[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("teams")
+}
+
+model Lead {
+  id           String    @id @default(cuid())
+  company_name String
+  contact_name String
+  email        String
+  phone        String?
+  source       String
+  status       String    @default("NEW")
+  owner_id     String?
+  owner        User?     @relation("LeadOwner", fields: [owner_id], references: [id], onDelete: SetNull)
+  consent      Boolean   @default(true)
+  custom_fields Json     @default("{}")
+  deleted_at   DateTime?
+
+  activities Activity[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([owner_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@map("leads")
+}
+
+model Account {
+  id           String    @id @default(cuid())
+  name         String
+  owner_id     String?
+  owner        User?     @relation("AccountOwner", fields: [owner_id], references: [id], onDelete: SetNull)
+  custom_fields Json     @default("{}")
+  deleted_at   DateTime?
+
+  contacts   Contact[]
+  deals      Deal[]
+  activities Activity[]
+  documents  Document[]
+  tasks      Task[]
+  tickets    Ticket[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([owner_id])
+  @@index([deleted_at])
+  @@map("accounts")
+}
+
+model Contact {
+  id           String    @id @default(cuid())
+  name         String
+  email        String
+  phone        String?
+  designation  String?
+  account_id   String
+  account      Account   @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  owner_id     String?
+  owner        User?     @relation("ContactOwner", fields: [owner_id], references: [id], onDelete: SetNull)
+  custom_fields Json     @default("{}")
+  deleted_at   DateTime?
+
+  deals      Deal[]
+  activities Activity[]
+  tasks      Task[]
+  tickets    Ticket[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([account_id])
+  @@index([owner_id])
+  @@index([deleted_at])
+  @@map("contacts")
+}
+
+model Deal {
+  id           String    @id @default(cuid())
+  title        String
+  amount       Int       @default(0)
+  employees    Int       @default(0)
+  stage_id     String
+  stage        PipelineStage @relation(fields: [stage_id], references: [id])
+  account_id   String
+  account      Account   @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  contact_id   String?
+  contact      Contact?  @relation(fields: [contact_id], references: [id], onDelete: SetNull)
+  owner_id     String?
+  owner        User?     @relation("DealOwner", fields: [owner_id], references: [id], onDelete: SetNull)
+  custom_fields Json     @default("{}")
+  deleted_at   DateTime?
+
+  stage_history DealStageHistory[]
+  documents     Document[]
+  activities    Activity[]
+  tasks         Task[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([stage_id])
+  @@index([account_id])
+  @@index([owner_id])
+  @@index([deleted_at])
+  @@map("deals")
+}
+
+model PipelineStage {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  probability Int
+  order_index Int
+
+  deals Deal[]
+  from_stage_histories DealStageHistory[] @relation("FromStage")
+  to_stage_histories   DealStageHistory[] @relation("ToStage")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([order_index])
+  @@map("pipeline_stages")
+}
+
+model DealStageHistory {
+  id            String         @id @default(cuid())
+  deal_id       String
+  deal          Deal           @relation(fields: [deal_id], references: [id], onDelete: Cascade)
+  from_stage_id String?
+  from_stage    PipelineStage? @relation("FromStage", fields: [from_stage_id], references: [id], onDelete: SetNull)
+  to_stage_id   String
+  to_stage      PipelineStage  @relation("ToStage", fields: [to_stage_id], references: [id])
+  changed_by    String?
+  user          User?          @relation(fields: [changed_by], references: [id], onDelete: SetNull)
+  changed_at    DateTime       @default(now())
+
+  @@index([deal_id])
+  @@index([changed_at])
+  @@map("deal_stage_history")
+}
+
+model Product {
+  id                       String   @id @default(cuid())
+  name                     String   @unique
+  price_per_employee_month Int
+  is_active                Boolean  @default(true)
+
+  document_items DocumentItem[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  type          String   @default("QUOTE")
+  number        String   @unique
+  monthly_total Int
+  annual_total  Int
+  account_id    String
+  account       Account  @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  deal_id       String
+  deal          Deal     @relation(fields: [deal_id], references: [id], onDelete: Cascade)
+
+  items DocumentItem[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([account_id])
+  @@index([deal_id])
+  @@map("documents")
+}
+
+model DocumentItem {
+  id          String   @id @default(cuid())
+  document_id String
+  document    Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  product_id  String
+  product     Product  @relation(fields: [product_id], references: [id])
+  qty         Int
+  unit_price  Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([document_id])
+  @@index([product_id])
+  @@map("document_items")
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  body        String
+  is_internal Boolean      @default(false)
+  mentions    String[]     @default([])
+  author_id   String?
+  author      User?        @relation("ActivityAuthor", fields: [author_id], references: [id], onDelete: SetNull)
+  account_id  String
+  account     Account      @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  lead_id     String?
+  lead        Lead?        @relation(fields: [lead_id], references: [id], onDelete: SetNull)
+  contact_id  String?
+  contact     Contact?     @relation(fields: [contact_id], references: [id], onDelete: SetNull)
+  deal_id     String?
+  deal        Deal?        @relation(fields: [deal_id], references: [id], onDelete: SetNull)
+  ticket_id   String?
+  ticket      Ticket?      @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([account_id])
+  @@index([lead_id])
+  @@index([contact_id])
+  @@index([deal_id])
+  @@index([ticket_id])
+  @@index([created_at])
+  @@map("activities")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  user_id    String
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  type       String
+  payload    Json
+  read_at    DateTime?
+  created_at DateTime  @default(now())
+
+  @@index([user_id])
+  @@index([read_at])
+  @@map("notifications")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  assignee_id String?
+  assignee    User?      @relation("TaskAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+  created_by  String?
+  creator     User?      @relation("TaskCreator", fields: [created_by], references: [id], onDelete: SetNull)
+  due_at      DateTime?
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  account_id  String?
+  account     Account?   @relation(fields: [account_id], references: [id], onDelete: SetNull)
+  contact_id  String?
+  contact     Contact?   @relation(fields: [contact_id], references: [id], onDelete: SetNull)
+  deal_id     String?
+  deal        Deal?      @relation(fields: [deal_id], references: [id], onDelete: SetNull)
+  ticket_id   String?
+  ticket      Ticket?    @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([assignee_id])
+  @@index([status])
+  @@index([due_at])
+  @@index([account_id])
+  @@map("tasks")
+}
+
+model Ticket {
+  id                String       @id @default(cuid())
+  subject           String
+  description       String?
+  priority          Priority     @default(MEDIUM)
+  status            TicketStatus @default(OPEN)
+  account_id        String
+  account           Account      @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  contact_id        String?
+  contact           Contact?     @relation(fields: [contact_id], references: [id], onDelete: SetNull)
+  assignee_id       String?
+  assignee          User?        @relation("TicketAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+  sla_policy_id     String?
+  sla_policy        SlaPolicy?   @relation(fields: [sla_policy_id], references: [id], onDelete: SetNull)
+  sla_due_at        DateTime?
+  sla_breached_at   DateTime?
+  first_response_at DateTime?
+
+  activities Activity[]
+  tasks      Task[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([account_id])
+  @@index([assignee_id])
+  @@index([status])
+  @@index([priority])
+  @@index([sla_due_at])
+  @@index([sla_breached_at])
+  @@map("tickets")
+}
+
+model SlaPolicy {
+  id                     String   @id @default(cuid())
+  priority               Priority @unique
+  first_response_minutes Int
+
+  tickets Ticket[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("sla_policies")
+}
+
+model Workflow {
+  id         String   @id @default(cuid())
+  name       String
+  trigger    String
+  conditions Json     @default("[]")
+  actions    Json     @default("[]")
+  is_active  Boolean  @default(true)
+
+  runs WorkflowRun[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([trigger])
+  @@index([is_active])
+  @@map("workflows")
+}
+
+model WorkflowRun {
+  id            String   @id @default(cuid())
+  workflow_id   String
+  workflow      Workflow @relation(fields: [workflow_id], references: [id], onDelete: Cascade)
+  trigger_event Json
+  status        String
+  log           Json     @default("[]")
+
+  created_at DateTime @default(now())
+
+  @@index([workflow_id])
+  @@index([created_at])
+  @@map("workflow_runs")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  user_id    String?
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  entity     String
+  entity_id  String
+  action     String
+  changes    Json     @default("{}")
+
+  created_at DateTime @default(now())
+
+  @@index([entity, entity_id])
+  @@index([user_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
