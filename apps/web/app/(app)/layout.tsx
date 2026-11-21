@@ -48,7 +48,7 @@ export default async function AppLayout({
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <AppHeader user={user} />
-          <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+          <main className="flex-1 p-6 md:p-8">
             {children}
           </main>
         </div>

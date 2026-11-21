@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -382,7 +383,7 @@ export default function DealsKanbanPage() {
 
       {/* Kanban Board Container */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 min-h-[700px] items-start overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 min-h-[700px] items-start">
           {stageStats.map((stage) => {
             const isWonColumn = stage.name === "Closed Won";
             const isLostColumn = stage.name === "Closed Lost";
@@ -390,7 +391,7 @@ export default function DealsKanbanPage() {
             return (
               <div
                 key={stage.id}
-                className="flex flex-col rounded-2xl border border-slate-200 bg-slate-100/60 p-3 min-w-[260px] shadow-xs"
+                className="flex flex-col rounded-2xl border border-slate-200 bg-slate-100/60 p-3 flex-1 min-w-[260px] shadow-xs"
               >
                 {/* Stage Header */}
                 <div className="mb-3 px-1">

@@ -45,11 +45,19 @@ function runPsql(query) {
 
 async function dragCard(page, cardLocator, targetColumnLocator) {
   const a = await cardLocator.boundingBox();
-  const b = await targetColumnLocator.boundingBox();
+  let b = await targetColumnLocator.boundingBox();
   const sx = a.x + a.width / 2, sy = a.y + a.height / 2;
   await page.mouse.move(sx, sy);
   await page.mouse.down();
   await page.mouse.move(sx + 12, sy + 12, { steps: 6 });        // exceed drag-start threshold
+
+  const vp = page.viewportSize() || { width: 1440, height: 900 };
+  if (b.x + b.width / 2 >= vp.width - 40) {
+    await page.mouse.move(vp.width - 40, sy, { steps: 20 });
+    await page.waitForTimeout(800);
+    b = await targetColumnLocator.boundingBox();
+  }
+
   await page.mouse.move(b.x + b.width / 2, b.y + 80, { steps: 30 }); // glide over the target column
   await page.waitForTimeout(400);                                // let the placeholder settle
   await page.mouse.up();
@@ -118,7 +126,7 @@ async function main() {
     console.log('  -> Redirected to /waitlist/thank-you successfully.');
 
     // Verify Meera received bell notification
-    const meeraContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const meeraContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     attachErrorListeners(meeraContext, 'Meera');
     const meeraPage = await meeraContext.newPage();
     console.log('2. Logging in as Meera (Manager) to verify assignment...');

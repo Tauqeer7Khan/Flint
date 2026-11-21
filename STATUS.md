@@ -18,7 +18,7 @@ The full original P0/P1/P2 plan in README.md remains the broader plan; this is t
 
 | Step | What | Status |
 |---|---|---|
-| 1 | **Phase 10d: bug-fix & conformance pass** (prod-mode start, honest latency numbers, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing, SOC 2 removal, icon.svg, drag proof, cookie secure) | ✅ |
+| 1 | **Phase 10e: Kanban laptop layout fix & multi-viewport drag proof** (flex row layout, no track overlap at 1280–1920px, 5/5 viewports proven via real mouse events, 0 console errors) | ✅ |
 | 2 | **P0 sign-off (human):** re-check Empulz site facts (waitlist count, modules), confirm no certification claims, 2 full rehearsals, 2-min backup recording | ⬜ |
 | 3 | **P1 demo set, in this order:** (a) AI summary on Customer 360 + ticket reply draft, (b) generic CSV export, (c) Quote GST 18% line + print-to-PDF, (d) ECG animation on dashboard header | ⬜ |
 | 4 | **Deploy** (Railway Hobby API + Neon + Vercel web). Localhost + recording stay the primary/backup demo | ⬜ |
@@ -426,6 +426,7 @@ pnpm dev                              # web + api
 | 10b. Audit Fixes & Hardening | — | RBAC matrix, workflows auth, formatINR, presence filter, socket reconnect, prod rehearsal | ✅ |
 | 10c. Bug-fix & Conformance | — | Prod-mode start, honest latency, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing | ✅ |
 | 10d. Fix-and-Prove Pass | — | SOC 2 removal, icon.svg 404 fix, Kanban drag 3/3 proof, cookie Secure on https only, honest audit mutations | ✅ |
+| 10e. Kanban Laptop Layout | — | Flex row layout with min-w-[260px], eliminate column overlap on laptop viewports (1280–1920px), proved drag-and-drop | ✅ |
 | Buffer | 19 – 24 | Re-planned, see STATUS.md Current Roadmap | ⬜ |
 
 ### 🧭 Roadmap
@@ -474,6 +475,7 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 - ✅ Phase 10b (21 Nov 2026): Fix-and-Prove, Hardening & Production Rehearsal. Fixed and proved all findings: (1) Added explicit `authMiddleware` and RBAC to `workflows.routes.ts` (ADMIN full, MANAGER read-only, SALES_REP/SUPPORT_AGENT 403) with UI Access Restricted card and navigation filtering; (2) Created canonical `formatINR` in `@flint/shared` and removed all hardcoded currency symbols; (3) Proved red cross-team banner on Customer 360 with Playwright; (4) Upgraded `socket.ts` to dynamic `auth: (cb)` token callback, proven via Playwright with Rahul receiving live @mention notification after 68s without page reload; (5) Confirmed 4 demo login button mappings and verified manual login for Kavya and Meera; (6) Production rehearsal: measured cold dev vs prod latency across 7 routes (showing up to 85% latency reduction in prod), passed `demo-walkthrough.cjs` and `verify-demo-ui.cjs` with 100% success in production mode (`next start` + `node apps/api/src/index.ts`); (7) Verified 12 pages in real browser with 0 console/page errors; pristine db:reset.
 - ✅ Phase 10c (21 Nov 2026): Bug-fix, Conformance Pass & Proofs. Verified reproducible prod-mode API start (NODE_ENV=production tsx src/index.ts in package.json start script) and prod web start (next start --port 3000) with Playwright login. Measured honest cold-start latency across 12 routes in Dev vs Prod using exact measure-routes.cjs script (no demo route exceeded 1500ms). Performed raw unauth security sweep (19 endpoints returning 401, health returning 200) and confirmed workflowsRouter pre-fix git history. Disclosed and justified 10b changes (presence-pill currentUser self-exclusion, verify-ui-pages audit seed pre-condition) with Playwright proofs. Verified zero build artifacts tracked. Proved Beat 5 demo script update with fresh 2-min Urgent ticket breaching live to Meera with unread notification.
 - ✅ Phase 10d (21 Nov 2026): Small Fix-and-Prove Pass. (1) Completely removed all unverified SOC 2 references across documentation, seed data, and UI strings, replacing with explicit RBAC/audit log expectations without certifications. (2) Resolved 404 console error on page visits by adding minimal flame `apps/web/app/icon.svg` (`#EA580C` rounded square). (3) Verified Kanban drag-and-drop reliability: diagnosed column overlap in narrow viewports and proved 3/3 mouse drag commits to Closed Won at 1920x1080 with automated task creation and stage history; verified keyboard drag path commits. (4) Updated cookie `secure` option to dynamically check `(process.env.WEB_ORIGIN || '').startsWith('https://')` to prevent auth cookie loss on HTTP localhost in Safari, verified with raw curl in both HTTP and HTTPS modes. (5) Replaced SQL audit log seed in `verify-ui-pages.cjs` with honest Admin API workflow toggle mutations (`PATCH /workflows/:id/toggle` off/on), failing loudly on non-2xx; verified 12 pages with 0 errors.
+- ✅ Phase 10e (21 Nov 2026): Kanban Laptop Layout Fix & Multi-Viewport Drag Proof. Diagnosed and fixed Kanban board column overlap on viewports < 1640px caused by CSS Grid 6-track layout tracks squeezing narrower than column min-w-[260px]. Replaced grid wrapper with horizontally scrollable flex row (`flex gap-4 overflow-x-auto min-h-[700px] items-start`) and `flex-1 min-w-[260px]` columns in `apps/web/app/(app)/deals/page.tsx`. Removed outer `overflow-y-auto` on main container in `apps/web/app/(app)/layout.tsx` to maintain single scroll parent for Droppable, eliminating unsupported nested scroll container warnings. Created `scripts/verify-kanban-viewports.cjs` testing real mouse drag across 5 viewports (1280x800, 1440x900, 1512x982, 1728x1117, 1920x1080) with 100% PASS, 0 console errors/warnings, and verified Closed Won stage + 3 onboarding tasks in DB. Reverted `scripts/verify-demo-ui.cjs` default viewport to 1440x900 and verified Beat 3 passes via real mouse drag. Zero items blocked.
 
 ---
 
@@ -487,12 +489,13 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 6. **Audit Log Inspection Pre-Condition in UI Verification**: `scripts/verify-ui-pages.cjs` ensures a baseline audit log entry exists prior to visiting `/settings` so the audit log viewer modal and JSON diff inspector can be exercised immediately after a fresh database reset.
 7. **Cookie `secure` Flag Scoped to HTTPS `WEB_ORIGIN`**: In `auth.ts`, the cookie `secure` option evaluates `(process.env.WEB_ORIGIN || '').startsWith('https://')` rather than blanket `NODE_ENV === 'production'`, allowing local production rehearsal on HTTP localhost in browsers like Safari that reject Secure cookies over plain HTTP.
 8. **Honest Audit Log Creation via Real API Mutations**: `scripts/verify-ui-pages.cjs` triggers genuine audit log rows via Admin `PATCH /workflows/:id/toggle` calls rather than SQL inserts, asserting real end-to-end audit capture before inspecting the settings viewer.
+9. **Kanban Flex Layout**: Kanban board is a horizontally scrollable flex row (min column width 260px) instead of a 6-track grid; verified at 1280-1920px.
 
 ---
 
 ## 🚀 Running the Demo
 
-Demo in Chrome. Prod mode: `pnpm --filter api start` + web build/start (commands above). Warm-up: `node scripts/measure-routes.cjs warm`.
+Demo in Chrome. Present with Chrome maximized. On a laptop, if the Kanban feels tight, press Cmd+- once or twice (80-90% zoom) so all 6 columns are visible. Prod mode: `pnpm --filter api start` + web build/start (commands above). Warm-up: `node scripts/measure-routes.cjs warm`.
 
 ### Prerequisites
 - Node.js >= 22
