@@ -18,7 +18,8 @@ export default async function AppLayout({
   }
 
   let user: SessionUser | null = null;
-  const directUrl = 'http://localhost:4000/auth/me';
+  const apiUrl = process.env.API_URL || 'http://localhost:4000';
+  const directUrl = `${apiUrl}/auth/me`;
 
   try {
     const res = await fetch(directUrl, {

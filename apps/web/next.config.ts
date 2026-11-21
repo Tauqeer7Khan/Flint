@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
+const apiUrl = process.env.API_URL || "http://localhost:4000";
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@flint/shared"],
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/:path*",
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },

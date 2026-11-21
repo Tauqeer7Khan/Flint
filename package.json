@@ -8,7 +8,10 @@
   "packageManager": "pnpm@12.21.0",
   "scripts": {
     "dev": "pnpm --parallel --filter api --filter web dev",
+    "build": "pnpm --filter api build",
+    "start": "pnpm --filter api start",
     "db:migrate": "pnpm --filter api exec prisma migrate dev",
+    "db:migrate:deploy": "pnpm --filter api db:migrate:deploy",
     "db:seed": "pnpm --filter api db:seed",
     "db:reset": "pnpm --filter api db:reset"
   },

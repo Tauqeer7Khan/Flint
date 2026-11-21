@@ -52,6 +52,15 @@ app.get('/health', async (req: Request, res: Response) => {
   }
 });
 
+// Root API information
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    service: 'Flint Collaborative CRM API',
+    status: 'online',
+    health: '/health',
+  });
+});
+
 // Public Routes (NO auth required)
 app.use(publicRouter);
 

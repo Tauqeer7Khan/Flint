@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatINR } from "@/lib/format";
@@ -75,8 +76,8 @@ export default function HomePage() {
 
             {/* Action Area */}
             <div className="flex justify-center pt-2">
-              <Button size="lg" className="bg-[#EA580C] hover:bg-[#C2410C] text-white font-semibold rounded-xl px-8 shadow-md shadow-orange-500/20">
-                Launch CRM Demo
+              <Button asChild size="lg" className="bg-[#EA580C] hover:bg-[#C2410C] text-white font-semibold rounded-xl px-8 shadow-md shadow-orange-500/20 cursor-pointer">
+                <Link href="/login">Launch CRM Demo</Link>
               </Button>
             </div>
           </CardContent>

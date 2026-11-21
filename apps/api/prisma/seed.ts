@@ -1,7 +1,7 @@
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma';
+import { PrismaClient } from '../src/generated/prisma/client';
 import { PIPELINE_STAGES, MODULES, SLA_TARGETS_MINUTES, ROLES, DEPARTMENTS } from '@flint/shared';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://flint:flint@localhost:5432/flint?schema=public';
