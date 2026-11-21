@@ -11,6 +11,24 @@
 
 ---
 
+## 🧭 Current Roadmap (re-prioritised by the developer, supersedes the old P1 order)
+
+**Goal right now: a recruiter-ready demo of Flint for Empulz. Everything below is ordered by that goal.**
+The full original P0/P1/P2 plan in README.md remains the broader plan; this is the order we actually work in.
+
+| Step | What | Status |
+|---|---|---|
+| 1 | **Phase 10c: bug-fix & conformance pass** (prod-mode start, honest latency numbers, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing) | ✅ |
+| 2 | **P0 sign-off (human):** re-check Empulz site facts (waitlist count, modules), confirm or drop the SOC 2 mention, 2 full rehearsals, 2-min backup recording | ⬜ |
+| 3 | **P1 demo set, in this order:** (a) AI summary on Customer 360 + ticket reply draft, (b) generic CSV export, (c) Quote GST 18% line + print-to-PDF, (d) ECG animation on dashboard header | ⬜ |
+| 4 | **Deploy** (Railway Hobby API + Neon + Vercel web). Localhost + recording stay the primary/backup demo | ⬜ |
+| 5 | **P2 stretch, only if time remains, in this order:** (a) React Flow read-only workflow view (~3.5h), (b) Follow/Watch (~2h). If no time, we skip them and that is fine | ⬜ |
+| Parked | Remaining P1 not on the demo path: Resend email, task reminders + `task.overdue`, extra triggers/actions. Remaining P2: everything else in the P2 list. Not planned now | ⏸ |
+
+Rules: finish a step before starting the next. No P1/P2 work starts before step 2 is signed off.
+
+---
+
 ## 🎯 Project Purpose
 
 Flint is a **demo-first portfolio project**. The goal is to show Empulz, in a ~6 minute live demo, that I understand their business (B2B employee experience SaaS, pre-launch, waitlist-driven) and can ship a full-stack, real-time, role-aware product in about 24 hours.
@@ -405,9 +423,16 @@ pnpm dev                              # web + api
 | 8. Analytics lite + Waitlist + Pulse | 15.5 – 17 | 4 tiles + forecast + rep table, public waitlist form (honeypot/rate-limit/consent), Account Pulse | ✅ |
 | 9. Seed + Polish + Demo prep | 17 – 19 | Indian seed data, DEMO_MODE, empty/loading states, rehearsal, 2-min screen recording | ✅ |
 | 9c. Evidence & UI Verification | — | Full browser Playwright verification of Beats 1–6, timezone/SLA sanity, response shapes, socket reactivity | ✅ |
-| Buffer | 19 – 24 | Absorb slippage first; then work the P1 Queue below | ⬜ |
+| 10b. Audit Fixes & Hardening | — | RBAC matrix, workflows auth, formatINR, presence filter, socket reconnect, prod rehearsal | ✅ |
+| 10c. Bug-fix & Conformance | — | Prod-mode start, honest latency, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing | ✅ |
+| Buffer | 19 – 24 | Re-planned, see STATUS.md Current Roadmap | ⬜ |
 
-### P1 Queue (strict order, only after all P0 are done)
+### 🧭 Roadmap
+See [Current Roadmap](#-current-roadmap-re-prioritised-by-the-developer-supersedes-the-old-p1-order) above for the active, recruiter-ready demo priority order.
+
+### Original backlog (reference)
+
+#### P1 Queue (original reference)
 1. AI summary on Customer 360 + ticket reply draft (~1–1.5h)
 2. Resend email (logged to timeline, allowlisted)
 3. Generic CSV export
@@ -418,7 +443,7 @@ pnpm dev                              # web + api
 
 8. **Deploy (optional)**: see notes below
 
-### P2 / Last (may never happen)
+#### P2 / Last (original reference)
 Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch · Knowledge Base · Users/Teams UI · Workflow builder / `@xyflow/react` view · BullMQ + Redis swap · Tags · CSV import · Stage config UI · Date filters · Quote → Invoice · Duplicate detection · Multiple pipelines · Email-to-ticket · Gmail sync · Browser push
 
 **Cut order if running late (P0 only):** Cmd+K-lite → Account Pulse trend pill → analytics forecast chart → quote builder polish → ECG animation. **Never cut:** Auth/RBAC, Data Hub + conversion, Kanban + Deal Won handoff, Customer 360 + cross-team banner, presence, workflow run history, SLA breach.
@@ -446,6 +471,7 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 - ✅ Phase 9c (21 Nov 2026): Full UI Playwright Verification. Automated all 6 real demo beats through real Google Chrome via Playwright with 0 unhandled errors: (1) Waitlist form submission with automated routing, (2) Lead conversion to deal + dynamic quote calculation (₹62,500/mo, ₹7,50,000/yr, no GST), (3) Closed Won deal stage movement generating 3 CS onboarding tasks and notification for Kavya, (4) Cross-team live presence and instant red alert banner + bell notification with 16ms socket latency, (5) Live 2-min SLA breach with in-process sweep, manager escalation to Meera, and workflow run history, (6) Cmd+K typo search (Zomto -> Zomato), non-NaN dashboard analytics, and 403 RBAC card for Support on /leads.
 - ✅ Phase 10 (21 Nov 2026): Repository Audit. Comprehensive read-only audit against README.md and STATUS.md. Verified locked stack versions, 19 database tables, RBAC matrix, and 6 demo beats. Identified findings: missing workflowsRouter.use(authMiddleware), workflows RBAC enforcement on runs/toggle/test, hardcoded currency symbol in deals.routes.ts, and socket handshake reconnection token handling.
 - ✅ Phase 10b (21 Nov 2026): Fix-and-Prove, Hardening & Production Rehearsal. Fixed and proved all findings: (1) Added explicit `authMiddleware` and RBAC to `workflows.routes.ts` (ADMIN full, MANAGER read-only, SALES_REP/SUPPORT_AGENT 403) with UI Access Restricted card and navigation filtering; (2) Created canonical `formatINR` in `@flint/shared` and removed all hardcoded currency symbols; (3) Proved red cross-team banner on Customer 360 with Playwright; (4) Upgraded `socket.ts` to dynamic `auth: (cb)` token callback, proven via Playwright with Rahul receiving live @mention notification after 68s without page reload; (5) Confirmed 4 demo login button mappings and verified manual login for Kavya and Meera; (6) Production rehearsal: measured cold dev vs prod latency across 7 routes (showing up to 85% latency reduction in prod), passed `demo-walkthrough.cjs` and `verify-demo-ui.cjs` with 100% success in production mode (`next start` + `node apps/api/src/index.ts`); (7) Verified 12 pages in real browser with 0 console/page errors; pristine db:reset.
+- ✅ Phase 10c (21 Nov 2026): Bug-fix, Conformance Pass & Proofs. Verified reproducible prod-mode API start (NODE_ENV=production tsx src/index.ts in package.json start script) and prod web start (next start --port 3000) with Playwright login. Measured honest cold-start latency across 12 routes in Dev vs Prod using exact measure-routes.cjs script (no demo route exceeded 1500ms). Performed raw unauth security sweep (19 endpoints returning 401, health returning 200) and confirmed workflowsRouter pre-fix git history. Disclosed and justified 10b changes (presence-pill currentUser self-exclusion, verify-ui-pages audit seed pre-condition) with Playwright proofs. Verified zero build artifacts tracked. Proved Beat 5 demo script update with fresh 2-min Urgent ticket breaching live to Meera with unread notification.
 
 ---
 

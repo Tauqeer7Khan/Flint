@@ -404,9 +404,17 @@ pnpm dev                              # web + api
 | 7. Real-time + Cmd+K + Alerts | 13 – 15.5 | Socket.io rooms, presence, live comments/notifications, cross-team banner, Cmd+K-lite | ✅ |
 | 8. Analytics lite + Waitlist + Pulse | 15.5 – 17 | 4 tiles + forecast + rep table, public waitlist form (honeypot/rate-limit/consent), Account Pulse | ✅ |
 | 9. Seed + Polish + Demo prep | 17 – 19 | Indian seed data, DEMO_MODE, empty/loading states, rehearsal, 2-min screen recording | ✅ |
-| Buffer | 19 – 24 | Absorb slippage first; then work the P1 Queue below | ⬜ |
+| 9c. Evidence & UI Verification | — | Full browser Playwright verification of Beats 1–6, timezone/SLA sanity, response shapes, socket reactivity | ✅ |
+| 10b. Audit Fixes & Hardening | — | RBAC matrix, workflows auth, formatINR, presence filter, socket reconnect, prod rehearsal | ✅ |
+| 10c. Bug-fix & Conformance | — | Prod-mode start, honest latency, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing | ✅ |
+| Buffer | 19 – 24 | Re-planned, see STATUS.md Current Roadmap | ⬜ |
 
-### P1 Queue (strict order, only after all P0 are done)
+### 🧭 Roadmap
+See [STATUS.md — Current Roadmap](STATUS.md#-current-roadmap-re-prioritised-by-the-developer-supersedes-the-old-p1-order) for the active, recruiter-ready demo priority order.
+
+### Original backlog (reference)
+
+#### P1 Queue (original reference)
 1. AI summary on Customer 360 + ticket reply draft (~1–1.5h)
 2. Resend email (logged to timeline, allowlisted)
 3. Generic CSV export
@@ -416,7 +424,7 @@ pnpm dev                              # web + api
 7. Extra triggers/actions (`ticket.created`, `deal.stage_changed`; `send_email`, `update_field`, `create_ticket`)
 8. **Deploy (optional)**: see notes below
 
-### P2 / Last (may never happen)
+#### P2 / Last (original reference)
 Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch · Knowledge Base · Users/Teams UI · Workflow builder / `@xyflow/react` view · BullMQ + Redis swap · Tags · CSV import · Stage config UI · Date filters · Quote → Invoice · Duplicate detection · Multiple pipelines · Email-to-ticket · Gmail sync · Browser push
 
 **Cut order if running late (P0 only):** Cmd+K-lite → Account Pulse trend pill → analytics forecast chart → quote builder polish → ECG animation. **Never cut:** Auth/RBAC, Data Hub + conversion, Kanban + Deal Won handoff, Customer 360 + cross-team banner, presence, workflow run history, SLA breach.
@@ -444,6 +452,7 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 - ✅ Phase 9c (21 Nov 2026): Full UI Playwright Verification. Automated all 6 real demo beats through real Google Chrome via Playwright with 0 unhandled errors: (1) Waitlist form submission with automated routing, (2) Lead conversion to deal + dynamic quote calculation (₹62,500/mo, ₹7,50,000/yr, no GST), (3) Closed Won deal stage movement generating 3 CS onboarding tasks and notification for Kavya, (4) Cross-team live presence and instant red alert banner + bell notification with 16ms socket latency, (5) Live 2-min SLA breach with in-process sweep, manager escalation to Meera, and workflow run history, (6) Cmd+K typo search (Zomto -> Zomato), non-NaN dashboard analytics, and 403 RBAC card for Support on /leads.
 - ✅ Phase 10 (21 Nov 2026): Repository Audit. Comprehensive read-only audit against README.md and STATUS.md. Verified locked stack versions, 19 database tables, RBAC matrix, and 6 demo beats. Identified findings: missing workflowsRouter.use(authMiddleware), workflows RBAC enforcement on runs/toggle/test, hardcoded currency symbol in deals.routes.ts, and socket handshake reconnection token handling.
 - ✅ Phase 10b (21 Nov 2026): Fix-and-Prove, Hardening & Production Rehearsal. Fixed and proved all findings: (1) Added explicit `authMiddleware` and RBAC to `workflows.routes.ts` (ADMIN full, MANAGER read-only, SALES_REP/SUPPORT_AGENT 403) with UI Access Restricted card and navigation filtering; (2) Created canonical `formatINR` in `@flint/shared` and removed all hardcoded currency symbols; (3) Proved red cross-team banner on Customer 360 with Playwright; (4) Upgraded `socket.ts` to dynamic `auth: (cb)` token callback, proven via Playwright with Rahul receiving live @mention notification after 68s without page reload; (5) Confirmed 4 demo login button mappings and verified manual login for Kavya and Meera; (6) Production rehearsal: measured cold dev vs prod latency across 7 routes (showing up to 85% latency reduction in prod), passed `demo-walkthrough.cjs` and `verify-demo-ui.cjs` with 100% success in production mode (`next start` + `node apps/api/src/index.ts`); (7) Verified 12 pages in real browser with 0 console/page errors; pristine db:reset.
+- ✅ Phase 10c (21 Nov 2026): Bug-fix, Conformance Pass & Proofs. Verified reproducible prod-mode API start (NODE_ENV=production tsx src/index.ts in package.json start script) and prod web start (next start --port 3000) with Playwright login. Measured honest cold-start latency across 12 routes in Dev vs Prod using exact measure-routes.cjs script (no demo route exceeded 1500ms). Performed raw unauth security sweep (19 endpoints returning 401, health returning 200) and confirmed workflowsRouter pre-fix git history. Disclosed and justified 10b changes (presence-pill currentUser self-exclusion, verify-ui-pages audit seed pre-condition) with Playwright proofs. Verified zero build artifacts tracked. Proved Beat 5 demo script update with fresh 2-min Urgent ticket breaching live to Meera with unread notification.
 
 ---
 
@@ -453,6 +462,8 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 2. **Per-page Dialogs instead of Generic Form**: Lead conversion, quote creation, task creation, and ticket reply dialogs use purpose-built, highly-responsive Radix UI modal components tailored to domain requirements rather than an over-abstracted generic Form component.
 3. **`DEMO_MODE` SLA Compression**: In `DEMO_MODE=true`, SLA resolution targets are compressed for live presentation: Urgent = 2 min, High = 5 min, Medium = 8 min, Low = 24 min (vs production targets: 1h, 4h, 8h, 24h), allowing real-time breach sweep and manager escalation to be demonstrated live in ~2 minutes.
 4. **`next build --webpack`**: Web production builds explicitly use Next.js's stable webpack compiler flag (`next build --webpack`) for rock-solid monorepo bundling with `@flint/shared`.
+5. **Presence Pill Viewer Self-Exclusion**: Filtered `currentUser.id` in `PresencePill` (`otherViewers`) so a user does not see their own name listed as an active viewer on records across single or multiple open tabs.
+6. **Audit Log Inspection Pre-Condition in UI Verification**: `scripts/verify-ui-pages.cjs` ensures a baseline audit log entry exists prior to visiting `/settings` so the audit log viewer modal and JSON diff inspector can be exercised immediately after a fresh database reset.
 
 ---
 
@@ -476,13 +487,12 @@ pnpm dev                              # Runs API (:4000) and Web (:3000) concurr
 
 ### 3. Production Mode (Optimized Rehearsal)
 ```bash
-# Terminal 1: Build & Start API
-pnpm --filter api build
-DEMO_MODE=true PORT=4000 pnpm --filter api exec tsx src/index.ts
+# Terminal 1: Start API in prod mode
+pnpm --filter api start
 
 # Terminal 2: Build & Start Web
-pnpm --filter web exec next build --webpack
-pnpm --filter web start --port 3000
+pnpm --filter web build
+pnpm --filter web start
 ```
 
 ### 4. Automated Verification Passes
@@ -544,8 +554,10 @@ node scripts/verify-ui-pages.cjs      # 12-page visual & console error audit
 1. **Waitlist form** submission → lead appears live on the Sales screen and is auto-assigned by a workflow.
 2. **Convert lead** → Account + Contact + Deal, then **quote** for 500 employees (Payroll + Attendance + Benefits Hub) → total in ₹.
 3. **Kanban**: drag the deal to Closed Won → handoff → onboarding tasks auto-created for CS/Support, with instant notification.
-4. **Support (Priya)** opens Customer 360 (timeline, Account Pulse, presence), creates a high-priority ticket → **red cross-team banner** appears live on Rahul's deal page. @mention in internal comments triggers a live notification.
-5. **Workflows page**: run history, plus the ticket SLA breach firing live (compressed SLA) → escalation.
+4. **Support (Priya)** opens Customer 360 (timeline, Account Pulse, presence), creates an **Urgent priority ticket** (or High) → **red cross-team banner** appears live on Rahul's deal page. @mention in internal comments triggers a live notification.
+5. **Workflows page**: run history, plus the ticket SLA breach firing live (compressed SLA: 2 min for Urgent vs 5 min for High) → escalation to Meera Iyer with instant manager notification.
+
+> **Timing note:** Reset right before the demo (`pnpm db:reset`). The seeded Urgent ticket will already have breached by Beat 5 (it shows up as an earlier run in history). The live one is the Beat 4 ticket (breaches live after 2 min). Note that a High ticket would breach after 5 min.
 6. **Cmd+K** typo-tolerant search, **analytics**, **RBAC** restriction as Support, **audit log** as Admin. (If P1 is done: AI summary on Customer 360, CSV export.)
 
 **Close:** *"Built in ~24h with Next.js 16, Express, Prisma 7, PostgreSQL and Socket.io, applying Empulz's 'no silos' philosophy to the customer side."*
