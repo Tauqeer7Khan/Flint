@@ -43,6 +43,19 @@ function runPsql(query) {
   return execSync(cmd, { encoding: 'utf-8' }).trim();
 }
 
+async function dragCard(page, cardLocator, targetColumnLocator) {
+  const a = await cardLocator.boundingBox();
+  const b = await targetColumnLocator.boundingBox();
+  const sx = a.x + a.width / 2, sy = a.y + a.height / 2;
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  await page.mouse.move(sx + 12, sy + 12, { steps: 6 });        // exceed drag-start threshold
+  await page.mouse.move(b.x + b.width / 2, b.y + 80, { steps: 30 }); // glide over the target column
+  await page.waitForTimeout(400);                                // let the placeholder settle
+  await page.mouse.up();
+  await page.waitForTimeout(800);
+}
+
 async function getContextCookieHeader(context) {
   const cookies = await context.cookies();
   return cookies.map((c) => `${c.name}=${c.value}`).join('; ');
@@ -105,7 +118,7 @@ async function main() {
     console.log('  -> Redirected to /waitlist/thank-you successfully.');
 
     // Verify Meera received bell notification
-    const meeraContext = await browser.newContext();
+    const meeraContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     attachErrorListeners(meeraContext, 'Meera');
     const meeraPage = await meeraContext.newPage();
     console.log('2. Logging in as Meera (Manager) to verify assignment...');
@@ -272,7 +285,7 @@ async function main() {
     const closedWonStageId = runPsql("SELECT id FROM pipeline_stages WHERE name = 'Closed Won';");
     let methodUsed = 'drag-and-drop';
 
-    // Attempt 1: Drag-and-drop on /deals Kanban board
+    // Attempt 1: Drag-and-drop on /deals Kanban board using real mouse movements
     await meeraPage.goto('http://localhost:3000/deals');
     await meeraPage.waitForSelector('[data-rfd-droppable-id]', { timeout: 10000 });
 
@@ -281,17 +294,19 @@ async function main() {
       const wonColumn = meeraPage.locator(`[data-rfd-droppable-id="${closedWonStageId}"]`);
       
       await dealCard.waitFor({ timeout: 5000 });
-      await dealCard.dragTo(wonColumn, { timeout: 5000 });
+      await dragCard(meeraPage, dealCard, wonColumn);
       await meeraPage.waitForTimeout(1500);
 
       const currentStage = runPsql(`SELECT stage_id FROM deals WHERE id = '${dealId}';`);
       if (currentStage !== closedWonStageId) {
         throw new Error('Drag did not update stage in DB');
       }
-      console.log('  -> Method used: Playwright HTML5 / mouse drag-and-drop on Kanban board');
+      methodUsed = 'DRAG: real mouse';
+      console.log('  -> Method used: DRAG: real mouse');
     } catch (dragErr) {
       console.log(`  -> Drag-and-drop did not commit (${dragErr.message}), using deal detail stage selector fallback...`);
-      methodUsed = 'stage selector dropdown on deal detail page';
+      methodUsed = 'FALLBACK: stage selector';
+      console.log('  -> Method used: FALLBACK: stage selector');
       await meeraPage.goto(`http://localhost:3000/deals/${dealId}`);
       await meeraPage.waitForSelector('[data-testid="stage-selector"]', { timeout: 5000 });
       await meeraPage.click('[data-testid="stage-selector"]');

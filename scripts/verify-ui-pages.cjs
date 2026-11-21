@@ -1,6 +1,45 @@
 const { chromium } = require('playwright');
 const http = require('http');
 
+function apiRequest(method, path, data, cookie) {
+  return new Promise((resolve, reject) => {
+    const postData = data ? JSON.stringify(data) : null;
+    const req = http.request(
+      {
+        hostname: 'localhost',
+        port: 4000,
+        path,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'http://localhost:3000',
+          ...(cookie ? { Cookie: cookie } : {}),
+          ...(postData ? { 'Content-Length': Buffer.byteLength(postData) } : {}),
+        },
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (c) => (body += c));
+        res.on('end', () => {
+          const resCookie = res.headers['set-cookie']
+            ? res.headers['set-cookie'].map((c) => c.split(';')[0]).join('; ')
+            : '';
+          let parsed;
+          try {
+            parsed = JSON.parse(body);
+          } catch {
+            parsed = body;
+          }
+          resolve({ statusCode: res.statusCode, data: parsed, cookie: resCookie });
+        });
+      }
+    );
+    req.on('error', reject);
+    if (postData) req.write(postData);
+    req.end();
+  });
+}
+
 function postRequest(path, data) {
   return new Promise((resolve, reject) => {
     const req = http.request(
@@ -77,12 +116,36 @@ async function runUiVerification() {
     await page.waitForURL('**/dashboard', { timeout: 15000 });
     record('Login as Admin', 'PASS', 'Logged in and redirected to /dashboard');
 
-    // Ensure an audit log row exists to inspect
-    try {
-      const { execSync } = require('child_process');
-      execSync(`docker exec flint-postgres psql -U flint -d flint -c "INSERT INTO audit_logs (id, entity, entity_id, action, changes, created_at) VALUES ('audit-test-1', 'LEAD', 'lead-123', 'CREATE', '{\\"name\\": \\"Audit Sample Corp\\"}', now()) ON CONFLICT (id) DO NOTHING;" 2>/dev/null || true`);
-      await new Promise((r) => setTimeout(r, 600));
-    } catch {}
+    // Perform real Admin workflow toggle mutations to generate an audit log entry
+    console.log('Generating real audit log row via Admin workflow toggle...');
+    const adminAuth = await apiRequest('POST', '/auth/demo', { role: 'ADMIN' });
+    if (adminAuth.statusCode < 200 || adminAuth.statusCode >= 300) {
+      throw new Error(`Failed to authenticate as ADMIN: HTTP ${adminAuth.statusCode}`);
+    }
+    const adminCookie = adminAuth.cookie;
+
+    const wfRes = await apiRequest('GET', '/workflows', null, adminCookie);
+    if (wfRes.statusCode < 200 || wfRes.statusCode >= 300) {
+      throw new Error(`Failed to list workflows: HTTP ${wfRes.statusCode}`);
+    }
+    const targetWf = wfRes.data?.items?.[0] || wfRes.data?.workflows?.[0];
+    if (!targetWf?.id) {
+      throw new Error('No workflow found to toggle for audit log generation');
+    }
+
+    // Toggle off
+    const toggleOff = await apiRequest('PATCH', `/workflows/${targetWf.id}/toggle`, { isActive: false }, adminCookie);
+    if (toggleOff.statusCode < 200 || toggleOff.statusCode >= 300) {
+      throw new Error(`Failed to toggle workflow off: HTTP ${toggleOff.statusCode}`);
+    }
+
+    // Toggle on (restores original active state)
+    const toggleOn = await apiRequest('PATCH', `/workflows/${targetWf.id}/toggle`, { isActive: true }, adminCookie);
+    if (toggleOn.statusCode < 200 || toggleOn.statusCode >= 300) {
+      throw new Error(`Failed to toggle workflow on: HTTP ${toggleOn.statusCode}`);
+    }
+
+    await new Promise((r) => setTimeout(r, 600));
 
     // 2. Settings as Admin
     console.log('\n▶ [Step 2] /settings as Admin (Rows + JSON Dialog Inspection)');

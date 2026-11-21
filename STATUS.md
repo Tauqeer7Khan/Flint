@@ -18,8 +18,8 @@ The full original P0/P1/P2 plan in README.md remains the broader plan; this is t
 
 | Step | What | Status |
 |---|---|---|
-| 1 | **Phase 10c: bug-fix & conformance pass** (prod-mode start, honest latency numbers, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing) | ✅ |
-| 2 | **P0 sign-off (human):** re-check Empulz site facts (waitlist count, modules), confirm or drop the SOC 2 mention, 2 full rehearsals, 2-min backup recording | ⬜ |
+| 1 | **Phase 10d: bug-fix & conformance pass** (prod-mode start, honest latency numbers, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing, SOC 2 removal, icon.svg, drag proof, cookie secure) | ✅ |
+| 2 | **P0 sign-off (human):** re-check Empulz site facts (waitlist count, modules), confirm no certification claims, 2 full rehearsals, 2-min backup recording | ⬜ |
 | 3 | **P1 demo set, in this order:** (a) AI summary on Customer 360 + ticket reply draft, (b) generic CSV export, (c) Quote GST 18% line + print-to-PDF, (d) ECG animation on dashboard header | ⬜ |
 | 4 | **Deploy** (Railway Hobby API + Neon + Vercel web). Localhost + recording stay the primary/backup demo | ⬜ |
 | 5 | **P2 stretch, only if time remains, in this order:** (a) React Flow read-only workflow view (~3.5h), (b) Follow/Watch (~2h). If no time, we skip them and that is fine | ⬜ |
@@ -58,7 +58,7 @@ Empulz's own philosophy is *"No silos. Every touchpoint connects."* Flint applie
 | "Join Waitlist" is the main CTA; site shows "100+ HR Leaders Registered" (the waitlist subdomain shows "85+") | Waitlist is the #1 lead source; public waitlist form is a P0 feature. **Don't quote an exact number in the demo without re-checking.** |
 | "500+ employees expected at launch", "10+ integrated modules" | Deal value is per-employee pricing |
 | 10 modules used as the catalog: HR Operations, Attendance, Payroll, Employee Benefits Hub, Wellness Hub, LifeAssist, Rewards & Recognition, Growth OS, Performance, Reports & Analytics | These ARE the dummy product catalog. ⚠️ Home page lists only HR Ops, Benefits, Wellness, Growth, Recognition, LifeAssist, Pulse AI. Confirm the rest on the Features page; prices are dummy either way |
-| Claims SOC 2, RBAC, audit trails (**not re-verified**) | RBAC + Audit Log are justified features; don't repeat the SOC 2 claim in the demo unless confirmed |
+| RBAC and audit logging are standard expectations for B2B HR software | RBAC + Audit Log are included as features. Do not attribute any security certification or claim to Empulz in the demo. |
 | Has "Pulse AI" product | Do NOT reuse the name. Flint's health score is called **Account Pulse** |
 | Indian company | Currency is **₹ (INR)**, formatted with `en-IN` (e.g., ₹12,50,000) |
 
@@ -425,6 +425,7 @@ pnpm dev                              # web + api
 | 9c. Evidence & UI Verification | — | Full browser Playwright verification of Beats 1–6, timezone/SLA sanity, response shapes, socket reactivity | ✅ |
 | 10b. Audit Fixes & Hardening | — | RBAC matrix, workflows auth, formatINR, presence filter, socket reconnect, prod rehearsal | ✅ |
 | 10c. Bug-fix & Conformance | — | Prod-mode start, honest latency, raw proofs, disclosed changes, artifacts untracked, Beat 5 timing | ✅ |
+| 10d. Fix-and-Prove Pass | — | SOC 2 removal, icon.svg 404 fix, Kanban drag 3/3 proof, cookie Secure on https only, honest audit mutations | ✅ |
 | Buffer | 19 – 24 | Re-planned, see STATUS.md Current Roadmap | ⬜ |
 
 ### 🧭 Roadmap
@@ -472,6 +473,7 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 - ✅ Phase 10 (21 Nov 2026): Repository Audit. Comprehensive read-only audit against README.md and STATUS.md. Verified locked stack versions, 19 database tables, RBAC matrix, and 6 demo beats. Identified findings: missing workflowsRouter.use(authMiddleware), workflows RBAC enforcement on runs/toggle/test, hardcoded currency symbol in deals.routes.ts, and socket handshake reconnection token handling.
 - ✅ Phase 10b (21 Nov 2026): Fix-and-Prove, Hardening & Production Rehearsal. Fixed and proved all findings: (1) Added explicit `authMiddleware` and RBAC to `workflows.routes.ts` (ADMIN full, MANAGER read-only, SALES_REP/SUPPORT_AGENT 403) with UI Access Restricted card and navigation filtering; (2) Created canonical `formatINR` in `@flint/shared` and removed all hardcoded currency symbols; (3) Proved red cross-team banner on Customer 360 with Playwright; (4) Upgraded `socket.ts` to dynamic `auth: (cb)` token callback, proven via Playwright with Rahul receiving live @mention notification after 68s without page reload; (5) Confirmed 4 demo login button mappings and verified manual login for Kavya and Meera; (6) Production rehearsal: measured cold dev vs prod latency across 7 routes (showing up to 85% latency reduction in prod), passed `demo-walkthrough.cjs` and `verify-demo-ui.cjs` with 100% success in production mode (`next start` + `node apps/api/src/index.ts`); (7) Verified 12 pages in real browser with 0 console/page errors; pristine db:reset.
 - ✅ Phase 10c (21 Nov 2026): Bug-fix, Conformance Pass & Proofs. Verified reproducible prod-mode API start (NODE_ENV=production tsx src/index.ts in package.json start script) and prod web start (next start --port 3000) with Playwright login. Measured honest cold-start latency across 12 routes in Dev vs Prod using exact measure-routes.cjs script (no demo route exceeded 1500ms). Performed raw unauth security sweep (19 endpoints returning 401, health returning 200) and confirmed workflowsRouter pre-fix git history. Disclosed and justified 10b changes (presence-pill currentUser self-exclusion, verify-ui-pages audit seed pre-condition) with Playwright proofs. Verified zero build artifacts tracked. Proved Beat 5 demo script update with fresh 2-min Urgent ticket breaching live to Meera with unread notification.
+- ✅ Phase 10d (21 Nov 2026): Small Fix-and-Prove Pass. (1) Completely removed all unverified SOC 2 references across documentation, seed data, and UI strings, replacing with explicit RBAC/audit log expectations without certifications. (2) Resolved 404 console error on page visits by adding minimal flame `apps/web/app/icon.svg` (`#EA580C` rounded square). (3) Verified Kanban drag-and-drop reliability: diagnosed column overlap in narrow viewports and proved 3/3 mouse drag commits to Closed Won at 1920x1080 with automated task creation and stage history; verified keyboard drag path commits. (4) Updated cookie `secure` option to dynamically check `(process.env.WEB_ORIGIN || '').startsWith('https://')` to prevent auth cookie loss on HTTP localhost in Safari, verified with raw curl in both HTTP and HTTPS modes. (5) Replaced SQL audit log seed in `verify-ui-pages.cjs` with honest Admin API workflow toggle mutations (`PATCH /workflows/:id/toggle` off/on), failing loudly on non-2xx; verified 12 pages with 0 errors.
 
 ---
 
@@ -481,10 +483,16 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 2. **Per-page Dialogs instead of Generic Form**: Lead conversion, quote creation, task creation, and ticket reply dialogs use purpose-built, highly-responsive Radix UI modal components tailored to domain requirements rather than an over-abstracted generic Form component.
 3. **`DEMO_MODE` SLA Compression**: In `DEMO_MODE=true`, SLA resolution targets are compressed for live presentation: Urgent = 2 min, High = 5 min, Medium = 8 min, Low = 24 min (vs production targets: 1h, 4h, 8h, 24h), allowing real-time breach sweep and manager escalation to be demonstrated live in ~2 minutes.
 4. **`next build --webpack`**: Web production builds explicitly use Next.js's stable webpack compiler flag (`next build --webpack`) for rock-solid monorepo bundling with `@flint/shared`.
+5. **Presence Pill Viewer Self-Exclusion**: Filtered `currentUser.id` in `PresencePill` (`otherViewers`) so a user does not see their own name listed as an active viewer on records across single or multiple open tabs.
+6. **Audit Log Inspection Pre-Condition in UI Verification**: `scripts/verify-ui-pages.cjs` ensures a baseline audit log entry exists prior to visiting `/settings` so the audit log viewer modal and JSON diff inspector can be exercised immediately after a fresh database reset.
+7. **Cookie `secure` Flag Scoped to HTTPS `WEB_ORIGIN`**: In `auth.ts`, the cookie `secure` option evaluates `(process.env.WEB_ORIGIN || '').startsWith('https://')` rather than blanket `NODE_ENV === 'production'`, allowing local production rehearsal on HTTP localhost in browsers like Safari that reject Secure cookies over plain HTTP.
+8. **Honest Audit Log Creation via Real API Mutations**: `scripts/verify-ui-pages.cjs` triggers genuine audit log rows via Admin `PATCH /workflows/:id/toggle` calls rather than SQL inserts, asserting real end-to-end audit capture before inspecting the settings viewer.
 
 ---
 
 ## 🚀 Running the Demo
+
+Demo in Chrome. Prod mode: `pnpm --filter api start` + web build/start (commands above). Warm-up: `node scripts/measure-routes.cjs warm`.
 
 ### Prerequisites
 - Node.js >= 22
@@ -578,6 +586,8 @@ node scripts/verify-ui-pages.cjs      # 12-page visual & console error audit
 
 **Close:** *"Built in ~24h with Next.js 16, Express, Prisma 7, PostgreSQL and Socket.io, applying Empulz's 'no silos' philosophy to the customer side."*
 
+Do not mention SOC 2 or any certification. Safe line: 'Flint has RBAC and an audit log.'
+
 **Backup:** 2-minute screen recording + one-command reset (`pnpm --filter api db:reset`).
 
 ---
@@ -585,7 +595,7 @@ node scripts/verify-ui-pages.cjs      # 12-page visual & console error audit
 ## ✅ Pre-Demo Verification Checklist
 
 - [ ] Re-check Empulz site: waitlist count (100+ vs 85+), module list, launch status
-- [ ] Confirm or drop the SOC 2 mention
+- [x] SOC 2: dropped. Never mention it in the demo.
 - [x] README states it is not related to Xoxoday Empuls
 - [x] `DEMO_MODE=true`, SLA compression working, seed reset tested (`pnpm db:reset`)
 - [x] Socket token flow tested

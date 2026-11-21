@@ -688,7 +688,7 @@ async function main() {
       },
       {
         type: 'MEETING',
-        body: 'Architecture and security review meeting with Reliance IT team. Reviewed SOC2 compliance and SSO integration.',
+        body: 'Architecture and security review meeting with Reliance IT team. Reviewed security requirements and SSO integration.',
         account_id: reliance.id,
         contact_id: contacts[1].id,
         deal_id: deal3.id,

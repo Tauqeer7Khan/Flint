@@ -45,7 +45,7 @@ authRouter.post('/auth/login', async (req: Request, res: Response) => {
 
 // POST /auth/logout
 authRouter.post('/auth/logout', (req: Request, res: Response) => {
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  res.clearCookie(COOKIE_NAME, COOKIE_OPTIONS);
   return res.json({ ok: true });
 });
 
