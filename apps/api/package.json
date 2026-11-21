@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "NODE_ENV=production tsx src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:reset": "prisma db seed"
   },
