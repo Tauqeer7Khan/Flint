@@ -1,7 +1,9 @@
 node_modules/
 .env
+.env.*
 .env.local
 .env.*.local
+*.log
 dist/
 .next/
 out/
@@ -9,3 +11,5 @@ build/
 .DS_Store
 apps/api/src/generated/
 apps/api/dist/
+
+*.tsbuildinfo

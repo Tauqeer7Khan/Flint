@@ -307,7 +307,7 @@ Express 5 API ──► Prisma 7 (adapter-pg) ──► PostgreSQL
 
 ---
 
-## 🗄️ Database Schema (~17 tables, down from ~25)
+## 🗄️ Database Schema (19 tables, down from ~25)
 
 - **Identity:** `users` (role, department, team_id, password_hash), `teams`
 - **Core:** `leads`, `accounts`, `contacts`, `deals`, `pipeline_stages` (probability, order_index), `deal_stage_history` (deal_id, from_stage, to_stage, changed_by, changed_at). Core 4 have `custom_fields JSONB` and `deleted_at`
@@ -440,6 +440,61 @@ Custom-field definition UI · Attachments · Meeting calendar · Follow/Watch ·
 - ✅ Phase 7 (20 Nov 2026): Real-Time Layer, Cross-Team Alert Banners, Live Presence, In-App Notifications, and Cmd+K Global Search complete. Built in-memory presence tracking per room (`page:${pageType}:${pageId}`) with Socket.io (`presence:join`, `presence:leave`, disconnect cleanup) and live viewer deduplication. Implemented `/api/search` with PostgreSQL `pg_trgm` GIN indexes for typo-tolerant fuzzy matching across Accounts, Contacts, Deals, and Leads (enforcing RBAC by blanking leads for Support Agents). Built cross-team alert banner endpoints (`/api/deals/:id/alerts` flagging open High/Urgent tickets on deals with red warning, `/api/tickets/:id/alerts` flagging active deals in Negotiation/Proposal with purple highlight). Built `/api/notifications` system with unread counter, single read, and read-all actions. Frontend: `CommandMenu` modal with ⌘K / Ctrl+K listener, keyboard arrow navigation, and grouped results; `NotificationBell` with live unread badge, click-away popover, and socket real-time listener; `PresencePill` with pulsating live viewer badges on Deal, Ticket, and Customer 360 pages; and cross-team alert banners embedded on `/deals/[id]` and `/tickets/[id]`.
 - ✅ Phase 8 (20 Nov 2026): Module 7 (Analytics Dashboard) + Public Waitlist Web-to-Lead Form + Account Pulse complete. Added `waitlistSchema` (honeypot, mandatory consent, custom fields) and response types (`AccountPulse`, `AnalyticsOverview`) to `@flint/shared`. Created Account Pulse calculation engine (`src/lib/pulse.ts`) implementing the exact Empulz specification (-15/open ticket capped at -45, -15 high/urgent penalty, -25/-10 recency decay, +10 high-value threshold shift). Integrated pulse into Customer 360 (`/accounts/[id]`) dark glass card and Accounts DataTable column. Built `GET /analytics/overview` with role-based scoping (`scopeFor`) returning Revenue This Month (₹), Lead Conversion %, Avg Deal Size (₹), Open Tickets & SLA Breaches, 30/60/90-day weighted pipeline forecast, and Rep Performance leaderboard. Built `POST /public/waitlist` with in-memory IP rate limiting (5 req/min), off-screen honeypot silent drop, and `lead.created` domain event emission triggering automated lead routing and owner notification. Replaced dashboard placeholder with Executive Dashboard featuring 4 pastel stat tiles, Recharts BarChart forecast, and rep performance table.
 - ✅ Phase 9 (20 Nov 2026): Module 8 (Audit Log Viewer & System Settings) + Lifeline Database Reset + Demo Polish & Verification complete. Implemented `GET /audit-logs` in Express 5 with RBAC enforcement (ADMIN full access, MANAGER read-only, SALES_REP and SUPPORT_AGENT 403 Forbidden), entity and action filtering, pagination, and user metadata. Built `/settings` in Next.js 16 with role-guarded access (Access Restricted card for Sales Reps and Support Agents with link to dashboard; full Audit Viewer for Admins and Managers with timestamp, author, entity, color-coded action badges, entity ID, and side-by-side JSON diff dialog displaying before/after state snapshots). Verified one-command database reset (`pnpm db:reset`) idempotently restores 19 tables and pristine seed counts (5 leads, 4 accounts, 6 contacts, 9 deals, 6 tickets, 8 tasks, 3 workflows). Verified DEMO_MODE=true with compressed SLA timers (urgent attendance ticket breaching ~3m from reset). Created comprehensive automated demo walkthrough script (`scripts/demo-walkthrough.cjs`) asserting all 6 demo beats programmatically with 100% pass rate. All P0 modules complete and verified.
+- ✅ Phase 9b (21 Nov 2026): Evidence Pass & Timezone Sanity. Verified pristine db:reset ticket SLA timestamp state (only urgent attendance ticket due in ~2.8m, all other seeded tickets have future SLA targets). Proved live in-process SLA sweep breach detection, domain event emission, and manager escalation to Meera Iyer with notification. Validated programmatic demo walkthrough across all 6 beats.
+- ✅ Phase 9c (21 Nov 2026): Full UI Playwright Verification. Automated all 6 real demo beats through real Google Chrome via Playwright with 0 unhandled errors: (1) Waitlist form submission with automated routing, (2) Lead conversion to deal + dynamic quote calculation (₹62,500/mo, ₹7,50,000/yr, no GST), (3) Closed Won deal stage movement generating 3 CS onboarding tasks and notification for Kavya, (4) Cross-team live presence and instant red alert banner + bell notification with 16ms socket latency, (5) Live 2-min SLA breach with in-process sweep, manager escalation to Meera, and workflow run history, (6) Cmd+K typo search (Zomto -> Zomato), non-NaN dashboard analytics, and 403 RBAC card for Support on /leads.
+- ✅ Phase 10 (21 Nov 2026): Repository Audit. Comprehensive read-only audit against README.md and STATUS.md. Verified locked stack versions, 19 database tables, RBAC matrix, and 6 demo beats. Identified findings: missing workflowsRouter.use(authMiddleware), workflows RBAC enforcement on runs/toggle/test, hardcoded currency symbol in deals.routes.ts, and socket handshake reconnection token handling.
+- ✅ Phase 10b (21 Nov 2026): Fix-and-Prove, Hardening & Production Rehearsal. Fixed and proved all findings: (1) Added explicit `authMiddleware` and RBAC to `workflows.routes.ts` (ADMIN full, MANAGER read-only, SALES_REP/SUPPORT_AGENT 403) with UI Access Restricted card and navigation filtering; (2) Created canonical `formatINR` in `@flint/shared` and removed all hardcoded currency symbols; (3) Proved red cross-team banner on Customer 360 with Playwright; (4) Upgraded `socket.ts` to dynamic `auth: (cb)` token callback, proven via Playwright with Rahul receiving live @mention notification after 68s without page reload; (5) Confirmed 4 demo login button mappings and verified manual login for Kavya and Meera; (6) Production rehearsal: measured cold dev vs prod latency across 7 routes (showing up to 85% latency reduction in prod), passed `demo-walkthrough.cjs` and `verify-demo-ui.cjs` with 100% success in production mode (`next start` + `node apps/api/src/index.ts`); (7) Verified 12 pages in real browser with 0 console/page errors; pristine db:reset.
+
+---
+
+## ⚖️ Accepted Deviations
+
+1. **No `proxy.ts`**: Next.js 16 App Router route protection and authentication are cleanly handled via server-side layout guards (`app/(app)/layout.tsx`) and Next.js rewrites (`/api/:path* -> http://localhost:4000/:path*`), avoiding unnecessary middleware complexity.
+2. **Per-page Dialogs instead of Generic Form**: Lead conversion, quote creation, task creation, and ticket reply dialogs use purpose-built, highly-responsive Radix UI modal components tailored to domain requirements rather than an over-abstracted generic Form component.
+3. **`DEMO_MODE` SLA Compression**: In `DEMO_MODE=true`, SLA resolution targets are compressed for live presentation: Urgent = 2 min, High = 5 min, Medium = 8 min, Low = 24 min (vs production targets: 1h, 4h, 8h, 24h), allowing real-time breach sweep and manager escalation to be demonstrated live in ~2 minutes.
+4. **`next build --webpack`**: Web production builds explicitly use Next.js's stable webpack compiler flag (`next build --webpack`) for rock-solid monorepo bundling with `@flint/shared`.
+
+---
+
+## 🚀 Running the Demo
+
+### Prerequisites
+- Node.js >= 22
+- pnpm >= 10
+- Docker (for PostgreSQL)
+
+### 1. Database Setup & Reset
+```bash
+docker compose up -d                  # Start PostgreSQL 17 container
+pnpm db:reset                         # Idempotently seed 19 tables with demo data
+```
+
+### 2. Development Mode (Hot Reload)
+```bash
+pnpm dev                              # Runs API (:4000) and Web (:3000) concurrently
+```
+
+### 3. Production Mode (Optimized Rehearsal)
+```bash
+# Terminal 1: Build & Start API
+pnpm --filter api build
+DEMO_MODE=true PORT=4000 pnpm --filter api exec tsx src/index.ts
+
+# Terminal 2: Build & Start Web
+pnpm --filter web exec next build --webpack
+pnpm --filter web start --port 3000
+```
+
+### 4. Automated Verification Passes
+```bash
+node scripts/demo-walkthrough.cjs     # Programmatic 6-beat API verification
+node scripts/verify-demo-ui.cjs       # Full 6-beat real Chrome Playwright rehearsal
+node scripts/verify-ui-pages.cjs      # 12-page visual & console error audit
+```
+
+> **Demo Notes:**
+> - **Beat 4 Note:** In `DEMO_MODE=true`, the HIGH priority ticket created in Beat 4 breaches on its own after ~5 minutes, triggering an automatic in-process sweep escalation to Meera Iyer (Manager).
+> - **CS Role Login:** Kavya Reddy (Customer Success / Support Agent) logs in manually via `kavya@flint.dev` / `flint123`. The 4 one-click buttons map to Admin (`admin@flint.dev`), Manager (`meera@flint.dev`), Sales (`rahul@flint.dev`), and Support (`priya@flint.dev`).
 
 ---
 

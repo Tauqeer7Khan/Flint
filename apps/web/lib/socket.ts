@@ -4,30 +4,37 @@ import { apiFetch } from './api';
 let socketInstance: Socket | null = null;
 
 export async function connectSocket(): Promise<Socket> {
-  if (socketInstance && socketInstance.connected) {
-    return socketInstance;
-  }
-
   if (socketInstance) {
-    socketInstance.disconnect();
-  }
-
-  try {
-    const { token } = await apiFetch<{ token: string }>('/auth/socket-token');
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
-
-    socketInstance = io(socketUrl, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
+    if (!socketInstance.connected) {
+      socketInstance.connect();
+    }
     return socketInstance;
-  } catch (err) {
-    console.warn('Failed to obtain socket token or connect:', err);
-    throw err;
   }
+
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
+
+  socketInstance = io(socketUrl, {
+    auth: (cb) => {
+      apiFetch<{ token: string }>('/auth/socket-token')
+        .then((data) => {
+          cb({ token: data.token });
+        })
+        .catch((err) => {
+          console.warn('Failed to obtain fresh socket token for connect/reconnect:', err);
+          cb({});
+        });
+    },
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 20,
+    reconnectionDelay: 1000,
+  });
+
+  if (typeof window !== 'undefined') {
+    (window as any).__flintSocket = socketInstance;
+  }
+
+  return socketInstance;
 }
 
 export function getSocket(): Socket | null {

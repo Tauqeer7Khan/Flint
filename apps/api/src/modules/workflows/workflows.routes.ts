@@ -4,11 +4,21 @@ import { logAudit } from '../../lib/audit';
 import { getIO } from '../../realtime';
 import { workflowToggleSchema } from '@flint/shared';
 import { executeSingleWorkflow } from './engine';
+import { authMiddleware } from '../../middleware/auth';
 
 export const workflowsRouter = Router();
 
+// Apply auth to all workflow routes
+workflowsRouter.use(authMiddleware);
+
 // GET /workflows - list all workflows with run counts + last 5 runs
 workflowsRouter.get('/workflows', async (req: Request, res: Response) => {
+  if (req.user!.role !== 'ADMIN' && req.user!.role !== 'MANAGER') {
+    return res.status(403).json({
+      error: 'Forbidden: Insufficient permissions to view workflows',
+    });
+  }
+
   const workflows = await prisma.workflow.findMany({
     orderBy: { created_at: 'asc' },
     include: {
@@ -45,6 +55,12 @@ workflowsRouter.get('/workflows', async (req: Request, res: Response) => {
 
 // PATCH /workflows/:id/toggle - toggle active state
 workflowsRouter.patch('/workflows/:id/toggle', async (req: Request, res: Response) => {
+  if (req.user!.role !== 'ADMIN') {
+    return res.status(403).json({
+      error: 'Forbidden: Only administrators can modify workflows',
+    });
+  }
+
   const id = String(req.params.id);
   const existing = await prisma.workflow.findUnique({
     where: { id },
@@ -91,6 +107,12 @@ workflowsRouter.patch('/workflows/:id/toggle', async (req: Request, res: Respons
 
 // GET /workflows/runs - list workflow run history
 workflowsRouter.get('/workflows/runs', async (req: Request, res: Response) => {
+  if (req.user!.role !== 'ADMIN' && req.user!.role !== 'MANAGER') {
+    return res.status(403).json({
+      error: 'Forbidden: Insufficient permissions to view workflow runs',
+    });
+  }
+
   const runs = await prisma.workflowRun.findMany({
     orderBy: { created_at: 'desc' },
     take: 50,
@@ -110,6 +132,12 @@ workflowsRouter.get('/workflows/runs', async (req: Request, res: Response) => {
 
 // POST /workflows/:id/test - trigger a test/dry run
 workflowsRouter.post('/workflows/:id/test', async (req: Request, res: Response) => {
+  if (req.user!.role !== 'ADMIN') {
+    return res.status(403).json({
+      error: 'Forbidden: Only administrators can test workflows',
+    });
+  }
+
   const id = String(req.params.id);
   const workflow = await prisma.workflow.findUnique({
     where: { id },
@@ -172,6 +200,18 @@ workflowsRouter.post('/workflows/:id/test', async (req: Request, res: Response) 
   }
 
   const run = await executeSingleWorkflow(workflow, testPayload);
+
+  await logAudit(prisma, {
+    userId: req.user!.id,
+    entity: 'WORKFLOWS',
+    entityId: id,
+    action: 'UPDATE',
+    changes: {
+      workflowName: workflow.name,
+      testRunId: run?.id || null,
+      status: run?.status || 'SKIPPED',
+    },
+  });
 
   return res.status(200).json({
     success: true,

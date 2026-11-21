@@ -3,6 +3,7 @@ import {
   createDealSchema,
   updateDealSchema,
   changeDealStageSchema,
+  formatINR,
 } from '@flint/shared';
 import { prisma } from '../../lib/prisma';
 import { logAudit } from '../../lib/audit';
@@ -249,7 +250,7 @@ dealsRouter.patch('/deals/:id/stage', async (req: Request, res: Response) => {
 
   // If new stage is Closed Won (probability 100), also emit deal.won and create SYSTEM won activity
   if (newStage.probability === 100) {
-    const formattedAmount = `₹${updatedDeal.amount.toLocaleString('en-IN')}`;
+    const formattedAmount = formatINR(updatedDeal.amount);
     await prisma.activity.create({
       data: {
         type: 'SYSTEM',

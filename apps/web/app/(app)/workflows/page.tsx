@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
   Layers,
   Play,
   RotateCw,
+  ShieldAlert,
   Sparkles,
   UserCheck,
   XCircle,
@@ -64,6 +66,21 @@ export default function WorkflowsPage() {
   const [testingId, setTestingId] = React.useState<string | null>(null);
   const [testNotification, setTestNotification] = React.useState<string | null>(null);
 
+  // Fetch current user for RBAC enforcement
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  }>({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
   // Real-time socket updates
   React.useEffect(() => {
     connectSocket().catch(() => {});
@@ -85,6 +102,7 @@ export default function WorkflowsPage() {
     workflows: WorkflowItem[];
   }>({
     queryKey: ["workflows"],
+    enabled: !!currentUser && currentUser.role !== "SALES_REP" && currentUser.role !== "SUPPORT_AGENT",
     queryFn: async () => {
       const res = await fetch("/api/workflows");
       if (!res.ok) throw new Error("Failed to load workflows");
@@ -97,6 +115,7 @@ export default function WorkflowsPage() {
     runs: WorkflowRunItem[];
   }>({
     queryKey: ["workflow-runs"],
+    enabled: !!currentUser && currentUser.role !== "SALES_REP" && currentUser.role !== "SUPPORT_AGENT",
     queryFn: async () => {
       const res = await fetch("/api/workflows/runs");
       if (!res.ok) throw new Error("Failed to load workflow runs");
@@ -213,6 +232,37 @@ export default function WorkflowsPage() {
     return `${actions.length} ${actions.length === 1 ? "action" : "actions"}: ${types.join(", ")}`;
   };
 
+  const isManager = currentUser?.role === "MANAGER";
+
+  // 403 Forbidden / Access Restricted Card for Sales Rep & Support Agent
+  if (!isLoadingUser && currentUser && (currentUser.role === "SALES_REP" || currentUser.role === "SUPPORT_AGENT")) {
+    return (
+      <div className="mx-auto max-w-lg pt-16">
+        <Card className="border-rose-100 bg-rose-50/20 text-center shadow-md">
+          <CardHeader className="pb-4">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+              <ShieldAlert className="h-7 w-7" />
+            </div>
+            <CardTitle className="text-xl font-bold text-slate-900">Access Restricted</CardTitle>
+            <CardDescription className="text-sm text-slate-600">
+              Contact your administrator for access to automated workflows.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-2">
+            <p className="text-xs text-slate-500">
+              Your role ({currentUser?.role || "GUEST"}) does not have administrative privileges to configure or inspect system workflows.
+            </p>
+            <Link href="/dashboard" className="block w-full">
+              <Button className="w-full bg-[#0B132B] hover:bg-[#1C2541] text-white">
+                Back to Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Top Header */}
@@ -276,11 +326,22 @@ export default function WorkflowsPage() {
                         type="button"
                         role="switch"
                         aria-checked={wf.is_active}
-                        title={wf.is_active ? "Click to deactivate" : "Click to activate"}
-                        onClick={() =>
-                          toggleMutation.mutate({ id: wf.id, isActive: !wf.is_active })
+                        disabled={isManager}
+                        title={
+                          isManager
+                            ? "View-only for Managers"
+                            : wf.is_active
+                            ? "Click to deactivate"
+                            : "Click to activate"
                         }
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        onClick={() => {
+                          if (!isManager) {
+                            toggleMutation.mutate({ id: wf.id, isActive: !wf.is_active });
+                          }
+                        }}
+                        className={`relative inline-flex h-6 w-11 shrink-0 ${
+                          isManager ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+                        } rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                           wf.is_active ? "bg-emerald-600" : "bg-slate-300"
                         }`}
                       >
@@ -333,16 +394,18 @@ export default function WorkflowsPage() {
                         {wf.is_active ? "Active" : "Disabled"}
                       </span>
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={isTesting || testRunMutation.isPending}
-                        onClick={() => testRunMutation.mutate(wf.id)}
-                        className="h-7 text-xs font-semibold gap-1 text-[#EA580C] border-orange-200 hover:bg-orange-50 hover:text-[#EA580C]"
-                      >
-                        <Play className="w-3 h-3 fill-current" />
-                        {isTesting ? "Running..." : "Test Run"}
-                      </Button>
+                      {!isManager && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isTesting || testRunMutation.isPending}
+                          onClick={() => testRunMutation.mutate(wf.id)}
+                          className="h-7 text-xs font-semibold gap-1 text-[#EA580C] border-orange-200 hover:bg-orange-50 hover:text-[#EA580C]"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          {isTesting ? "Running..." : "Test Run"}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

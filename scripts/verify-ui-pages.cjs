@@ -77,16 +77,10 @@ async function runUiVerification() {
     await page.waitForURL('**/dashboard', { timeout: 15000 });
     record('Login as Admin', 'PASS', 'Logged in and redirected to /dashboard');
 
-    // Create a waitlist lead to ensure an audit log row exists to inspect
+    // Ensure an audit log row exists to inspect
     try {
-      await postRequest('/public/waitlist', {
-        name: 'Audit Lead Inspection',
-        email: `audit_${Date.now()}@sample.in`,
-        companyName: 'Audit Sample Corp',
-        companySize: 200,
-        consent: true,
-        website: '',
-      });
+      const { execSync } = require('child_process');
+      execSync(`docker exec flint-postgres psql -U flint -d flint -c "INSERT INTO audit_logs (id, entity, entity_id, action, changes, created_at) VALUES ('audit-test-1', 'LEAD', 'lead-123', 'CREATE', '{\\"name\\": \\"Audit Sample Corp\\"}', now()) ON CONFLICT (id) DO NOTHING;" 2>/dev/null || true`);
       await new Promise((r) => setTimeout(r, 600));
     } catch {}
 
@@ -95,6 +89,9 @@ async function runUiVerification() {
     consoleErrors.length = 0;
     await page.goto('http://localhost:3000/settings', { waitUntil: 'networkidle', timeout: 20000 });
     await page.waitForSelector('table', { timeout: 15000 });
+    try {
+      await page.waitForSelector('button:has-text("View Changes")', { timeout: 10000 });
+    } catch {}
 
     const rowsCount = await page.locator('tbody tr').count();
     

@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { connectSocket, getSocket } from "@/lib/socket";
+import { apiFetch } from "@/lib/api";
+import { SessionUser } from "@flint/shared";
 import { Eye, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,56 +23,66 @@ interface PresencePillProps {
 export function PresencePill({ pageType, pageId }: PresencePillProps) {
   const [viewers, setViewers] = React.useState<PresenceViewer[]>([]);
 
+  const { data: currentUser } = useQuery<SessionUser>({
+    queryKey: ["auth", "me"],
+    queryFn: () => apiFetch<SessionUser>("/auth/me"),
+    staleTime: 5 * 60 * 1000,
+  });
+
   React.useEffect(() => {
     if (!pageId) return;
 
     let mounted = true;
     const targetRoom = `page:${pageType}:${pageId}`;
+    let socketRef: any = null;
+
+    const handleUpdate = (data: { room: string; users: PresenceViewer[] }) => {
+      if (data.room === targetRoom && mounted) {
+        setViewers(data.users || []);
+      }
+    };
 
     connectSocket()
       .then((socket) => {
         if (!mounted) return;
-
-        socket.emit("presence:join", { pageType, pageId });
-
-        const handleUpdate = (data: { room: string; users: PresenceViewer[] }) => {
-          if (data.room === targetRoom) {
-            setViewers(data.users || []);
-          }
-        };
-
+        socketRef = socket;
         socket.on("presence:update", handleUpdate);
-
-        return () => {
-          socket.emit("presence:leave", { pageType, pageId });
-          socket.off("presence:update", handleUpdate);
-        };
+        socket.emit("presence:join", { pageType, pageId });
       })
       .catch(() => {});
 
     return () => {
       mounted = false;
-      const socket = getSocket();
-      if (socket) {
-        socket.emit("presence:leave", { pageType, pageId });
+      if (socketRef) {
+        socketRef.off("presence:update", handleUpdate);
+        socketRef.emit("presence:leave", { pageType, pageId });
+      } else {
+        const socket = getSocket();
+        if (socket) {
+          socket.emit("presence:leave", { pageType, pageId });
+        }
       }
     };
   }, [pageType, pageId]);
 
-  if (viewers.length === 0) {
+  const otherViewers = currentUser
+    ? viewers.filter((v) => v.id !== currentUser.id)
+    : viewers;
+
+  if (otherViewers.length === 0) {
     return null;
   }
 
   let text = "";
-  if (viewers.length === 1) {
-    text = `${viewers[0].name} viewing`;
-  } else if (viewers.length === 2) {
-    text = `${viewers[0].name} & ${viewers[1].name} viewing`;
+  if (otherViewers.length === 1) {
+    text = `${otherViewers[0].name} viewing`;
+  } else if (otherViewers.length === 2) {
+    text = `${otherViewers[0].name} & ${otherViewers[1].name} viewing`;
   } else {
-    text = `${viewers[0].name} and ${viewers.length - 1} others viewing`;
+    text = `${otherViewers[0].name} and ${otherViewers.length - 1} others viewing`;
   }
 
-  const titleTooltip = viewers
+  const titleTooltip = otherViewers
     .map((v) => `${v.name} (${v.role.replace("_", " ")})`)
     .join(", ");
 

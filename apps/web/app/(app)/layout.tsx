@@ -43,7 +43,7 @@ export default async function AppLayout({
     <Providers>
       <div className="min-h-screen flex bg-slate-50 text-[#0B132B]">
         {/* Left Sidebar */}
-        <AppSidebar />
+        <AppSidebar userRole={user.role} />
 
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col min-w-0">

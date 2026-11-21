@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -27,8 +28,33 @@ const navItems = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  userRole?: string;
+}
+
+export function AppSidebar({ userRole }: AppSidebarProps) {
   const pathname = usePathname();
+  const [role, setRole] = React.useState<string | undefined>(userRole);
+
+  React.useEffect(() => {
+    if (userRole) {
+      setRole(userRole);
+    } else {
+      fetch('/api/auth/me')
+        .then((r) => r.json())
+        .then((u) => {
+          if (u?.role) setRole(u.role);
+        })
+        .catch(() => {});
+    }
+  }, [userRole]);
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.name === 'Workflows' && (role === 'SALES_REP' || role === 'SUPPORT_AGENT')) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <aside className="w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between shrink-0 h-screen sticky top-0">
@@ -50,7 +76,7 @@ export function AppSidebar() {
 
         {/* Navigation links */}
         <nav className="p-3 space-y-1">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
             return (
