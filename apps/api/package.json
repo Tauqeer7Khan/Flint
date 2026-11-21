@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "NODE_ENV=production tsx src/index.ts",
+    "start": "prisma generate && NODE_ENV=production tsx src/index.ts",
     "build": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
