@@ -4,6 +4,27 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma';
 import { PIPELINE_STAGES, MODULES, SLA_TARGETS_MINUTES, ROLES, DEPARTMENTS } from '@flint/shared';
 const connectionString = process.env.DATABASE_URL || 'postgresql://flint:flint@localhost:5432/flint?schema=public';
+
+// Safety guard: refuse to wipe/seed a remote database unless ALLOW_REMOTE_RESET=1
+try {
+  const parsedUrl = new URL(connectionString);
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const allowedLocalHosts = ['localhost', '127.0.0.1', 'db'];
+  const isLocalHost = allowedLocalHosts.includes(hostname);
+
+  if (!isLocalHost && process.env.ALLOW_REMOTE_RESET !== '1') {
+    console.error(`\n❌ SAFETY GUARD REFUSAL: Refusing to reset/seed remote database at host "${hostname}".`);
+    console.error('Resetting a remote database requires ALLOW_REMOTE_RESET=1.');
+    console.error('Usage: ALLOW_REMOTE_RESET=1 DATABASE_URL=<url> pnpm --filter api db:reset\n');
+    process.exit(1);
+  }
+} catch (err) {
+  if (process.env.ALLOW_REMOTE_RESET !== '1') {
+    console.error(`\n❌ SAFETY GUARD REFUSAL: Could not verify database host as local, and ALLOW_REMOTE_RESET is not set.`);
+    process.exit(1);
+  }
+}
+
 const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });

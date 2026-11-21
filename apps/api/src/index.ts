@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 
+import { prisma } from './lib/prisma';
 import { originCheckMiddleware } from './middleware/origin';
 import { authRouter } from './modules/auth/auth.routes';
 import { leadsRouter } from './modules/leads/leads.routes';
@@ -24,12 +25,17 @@ import { initRealtime } from './realtime';
 import { startScheduler } from './scheduler';
 
 const app = express();
-const PORT = process.env.PORT || 4000;
-const WEB_ORIGIN = process.env.WEB_ORIGIN || 'http://localhost:3000';
+const PORT = Number(process.env.PORT) || 4000;
+const rawOrigins = process.env.WEB_ORIGIN || 'http://localhost:3000';
+const allowedOrigins = rawOrigins.split(',').map((o) => o.trim()).filter(Boolean);
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 // Core Middlewares
 app.use(cors({
-  origin: WEB_ORIGIN,
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(cookieParser());
@@ -37,8 +43,13 @@ app.use(express.json());
 app.use(originCheckMiddleware);
 
 // Health check route
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ ok: true });
+app.get('/health', async (req: Request, res: Response) => {
+  try {
+    await prisma.$queryRawUnsafe('SELECT 1');
+    res.json({ ok: true, database: 'healthy' });
+  } catch (err: any) {
+    res.status(503).json({ ok: false, error: 'Database unavailable' });
+  }
 });
 
 // Public Routes (NO auth required)
@@ -73,7 +84,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 const server = http.createServer(app);
 initRealtime(server);
 
-server.listen(PORT, () => {
-  console.log(`🚀 Flint API running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Flint API running on http://0.0.0.0:${PORT}`);
   startScheduler();
 });

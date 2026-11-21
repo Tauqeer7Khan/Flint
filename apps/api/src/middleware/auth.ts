@@ -8,7 +8,9 @@ export const COOKIE_NAME = 'flint_token';
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   get secure() {
-    return (process.env.WEB_ORIGIN || '').startsWith('https://');
+    return (process.env.WEB_ORIGIN || '')
+      .split(',')
+      .some((o) => o.trim().startsWith('https://'));
   },
   sameSite: 'lax' as const,
   maxAge: 12 * 60 * 60 * 1000, // 12 hours

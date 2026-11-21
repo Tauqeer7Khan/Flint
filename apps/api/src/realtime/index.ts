@@ -7,11 +7,12 @@ import { handlePresence } from './presence';
 let io: SocketIOServer | null = null;
 
 export function initRealtime(server: http.Server): SocketIOServer {
-  const webOrigin = process.env.WEB_ORIGIN || 'http://localhost:3000';
+  const rawOrigins = process.env.WEB_ORIGIN || 'http://localhost:3000';
+  const allowedOrigins = rawOrigins.split(',').map((o) => o.trim()).filter(Boolean);
 
   io = new SocketIOServer(server, {
     cors: {
-      origin: webOrigin,
+      origin: allowedOrigins,
       credentials: true,
     },
   });
